@@ -246,12 +246,20 @@ impl Stream for ClickhouseTransport {
             }
         }
 
-        if *this.done {
+        // EOF can arrive in the same read as the final response packets.
+        if *this.done && this.rd.is_empty() {
             return Poll::Ready(None);
         }
 
         // Try to parse the new data!
         let ret = this.try_parse_msg();
+
+        if *this.done && matches!(ret, Poll::Pending) {
+            return Poll::Ready(Some(Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "incomplete ClickHouse packet",
+            ))));
+        }
 
         *this.buf_is_incomplete = matches!(ret, Poll::Pending);
 

@@ -414,7 +414,7 @@ impl ClientHandle {
                             }
                         }
 
-                        Ok(h.unwrap())
+                        h.ok_or(Error::Connection(ConnectionError::Broken))
                     }
                 })
                 .await
